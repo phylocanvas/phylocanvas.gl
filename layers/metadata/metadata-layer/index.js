@@ -22,8 +22,6 @@
 import { TextLayer } from "@deck.gl/layers";
 import { CompositeLayer } from "@deck.gl/core";
 
-import iconAtlas from "../../shapes/icon-atlas-generator";
-
 import BlockLayer from "../block-layer";
 
 const highlightColor = [ 0, 0, 0, 64 ];
@@ -37,13 +35,10 @@ export default class MetadataLayer extends CompositeLayer {
         getAngle: (datum) => datum.node.angleDegrees,
         getColor: (datum) => datum.colour,
         getFillColor: (datum) => datum.colour,
-        getIcon: () => "square",
         getPixelOffset: this.props.getPixelOffset,
         getRadius: this.props.blockSize / 2,
         maxSizeRatio: (!this.props.isOrthogonal || (this.props.stepSize > this.props.blockSize)) ? 1.0 : (this.props.stepSize / this.props.blockSize),
         highlightColor,
-        iconAtlas: iconAtlas.image,
-        iconMapping: iconAtlas.mapping,
         id: "metadata-blocks",
         pickable: true,
         radiusUnits: "pixels",

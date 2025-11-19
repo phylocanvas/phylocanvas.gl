@@ -54,6 +54,31 @@ const maxLabelWidthMemo = memoise(
 );
 maxLabelWidthMemo.displayName = "max-label-width";
 
+const metadataHeadersLengthMemo = memoise(
+  (tree) => tree.props.blocks || EmptyArray,
+  (tree) => tree.getFontFamily(),
+  (tree) => tree.getBlockHeaderFontSize(),
+  (
+    blocks,
+    fontFamily,
+    fontSize,
+  ) => {
+    let longestLabel = 0;
+    for (const header of blocks) {
+      longestLabel = Math.max(
+        longestLabel,
+        measureTextWidth(
+          header,
+          fontFamily,
+          fontSize,
+        ),
+      );
+    }
+    return longestLabel;
+  },
+);
+metadataHeadersLengthMemo.metadataTotalLengthMemo = "metadata-headers-length";
+
 const metadataTotalLengthMemo = (tree) => {
   return tree.getMetadataColumnWidth() * (tree.props.blocks || EmptyArray).length;
 };
@@ -63,13 +88,13 @@ const pixelOffsetsMemo = memoise(
   (tree) => tree.getTreeType(),
   (tree) => (tree.getShowShapes() ? tree.getNodeSize() : 0),
   (tree) => (tree.hasLeafLabels() ? maxLabelWidthMemo(tree) : 0),
-  (tree) => (tree.hasMetadataHeaders() ? tree.getFontSize() : 0),
+  (tree) => (tree.hasMetadataHeaders() ? metadataHeadersLengthMemo(tree) : 0),
   (tree) => (tree.hasMetadata() ? metadataTotalLengthMemo(tree) : 0),
   (
     treeType,
     visibleNodeSize,
     maxLabelWidth,
-    metadataHeaderFontSize,
+    metadataHeaderHeight,
     metadataTotalLength,
   ) => {
     let length = 0;
@@ -87,7 +112,7 @@ const pixelOffsetsMemo = memoise(
       case TreeTypes.Rectangular:
       case TreeTypes.Diagonal:
         preY = Math.max(
-          metadataHeaderFontSize,
+          metadataHeaderHeight,
           visibleNodeSize / 2,
         );
         postX = length;
@@ -95,7 +120,7 @@ const pixelOffsetsMemo = memoise(
         break;
       case TreeTypes.Hierarchical:
         preX = Math.max(
-          metadataHeaderFontSize,
+          metadataHeaderHeight,
           visibleNodeSize / 2,
         );
         postY = length;

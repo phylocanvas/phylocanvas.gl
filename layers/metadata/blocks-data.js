@@ -30,6 +30,7 @@ export default memoise(
   (tree) => tree.props.blocks || EmptyArray,
   (tree) => tree.getMetadataColumnWidth(),
   (tree) => tree.getBranchScale(),
+  (tree) => tree.getBlockPadding(),
   (
     graph,
     shouldAlignLabels,
@@ -37,6 +38,7 @@ export default memoise(
     metadataColumns,
     columnWidth,
     branchScale,
+    blockPadding,
   ) => {
     const data = [];
 
@@ -67,7 +69,7 @@ export default memoise(
             if (metadataValue.colour) {
               data.push({
                 position: nodePosition,
-                offsetX: xOffset + (columnWidth / 2),
+                offsetX: xOffset + blockPadding + (columnWidth / 2),
                 colour: colourToRGBA(metadataValue.colour),
                 columnName,
                 block: metadataValue,

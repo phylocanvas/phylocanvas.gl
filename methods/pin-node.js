@@ -20,22 +20,23 @@
 // THE SOFTWARE.
 
 import defaults from "../defaults";
+import appendToArray from "../utils/append-to-array";
 
-import zoomToScale from "../utils/zoom-to-scale";
+export default function pinNode(
+  nodeOrId,
+  append = true,
+) {
+  const node = nodeOrId ? this.findNodeById(nodeOrId) : null;
 
-export default function setZoom(zoom, screenPoint = this.getCanvasCentrePoint()) {
-  const newZoom = zoom ?? defaults.zoom;
-
-  if (screenPoint) {
-    const newScale = zoomToScale(newZoom);
-    this.deck.viewManager.controllers.OrthographicView.zoom(
-      newScale,
-      screenPoint,
+  if (node && node.isLeaf) {
+    const pinnedIds = appendToArray(
+      this.props.pinnedIds,
+      node.id,
+      append,
     );
+    this.setProps({ pinnedIds });
   }
-  else {
-    this.setView({
-      zoom: newZoom,
-    });
+  else if (!node) {
+    this.setProps({ pinnedIds: defaults.pinnedIds });
   }
 }

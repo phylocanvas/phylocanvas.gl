@@ -89,12 +89,12 @@ export default function createController(tree) {
 
     zoom(scaleDelta, pos = tree.getCanvasCentrePoint()) {
       const { ControllerState } = this;
-      this.controllerState = new ControllerState({
+      this._controllerState = new ControllerState({
         makeViewport: this.makeViewport,
         ...this.controllerStateProps,
         ...this._state,
       });
-      const newControllerState = this.controllerState.zoom({ pos, scale: scaleDelta });
+      const newControllerState = this._controllerState.zoom({ pos, scale: scaleDelta });
       this.updateViewport(
         newControllerState,
         { transitionDuration: 0 },

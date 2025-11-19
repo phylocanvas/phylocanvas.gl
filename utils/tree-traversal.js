@@ -67,7 +67,7 @@ export default function treeTraversal(rootNode, { trimQuotes = true } = {}) {
       const node = preorderTraversal[nodeIndex];
       if (node.children) {
         for (const child of node.children) {
-          child.branchLength = node.branchLength + 1;
+          child.branchLength = 1e-9;
         }
       }
     }

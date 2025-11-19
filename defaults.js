@@ -27,6 +27,7 @@ export default Object.freeze({
   nodeShape: "circle",
   nodeSize: 14,
   padding: 16,
+  pinnedIds: [],
   rootId: null,
   rotatedIds: EmptyArray,
   scaleLineAlpha: false,

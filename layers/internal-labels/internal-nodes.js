@@ -41,10 +41,13 @@ const internalLabelsMemo = memoise(
         node.name
       ) {
         if (internalLabelsFilterRange) {
+          const min = parseFloat(internalLabelsFilterRange[0]);
+          const max = parseFloat(internalLabelsFilterRange[1]);
+          const value = parseFloat(node.name);
           if (
-            node.name >= internalLabelsFilterRange[0]
+            value >= min
             &&
-            node.name <= internalLabelsFilterRange[1]
+            value <= max
           ) {
             labels.push(node);
           }

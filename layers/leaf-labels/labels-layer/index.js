@@ -42,10 +42,28 @@ function getNodePosition(node) {
 export default class LeafLabelsLayer extends CompositeLayer {
 
   renderLayers() {
+    const [ 
+      nodesWithLabels,
+      selectedNodes,
+    ] = this.props.data;
     const layers = [
       new TextLayer({
         id: "leaf-labels-text",
-        data: this.props.data,
+        data: nodesWithLabels,
+        getSize: this.props.fontSize,
+        getPosition: this.props.getTextPosition,
+        getText,
+        getAngle: nodeAngleInDegrees,
+        getColor: this.props.fontColour,
+        fontFamily: this.props.fontFamily,
+        getTextAnchor,
+        backgroundColor: this.props.backgroundColour,
+        updateTriggers: { getPosition: this.props.updateTriggers.getTextPosition },
+        pickable: true,
+      }),
+      new TextLayer({
+        id: "leaf-labels-selected",
+        data: selectedNodes,
         getSize: this.props.fontSize,
         getPosition: this.props.getTextPosition,
         getText,
@@ -80,7 +98,7 @@ export default class LeafLabelsLayer extends CompositeLayer {
       layers.push(
         new LineLayer({
           id: "leaf-labels-lines",
-          data: this.props.data,
+          data: nodesWithLabels,
           getSourcePosition: this.props.getTextPosition,
           getTargetPosition: getNodePosition,
           getColor: this.props.lineColour,
@@ -89,6 +107,33 @@ export default class LeafLabelsLayer extends CompositeLayer {
           updateTriggers: { getSourcePosition: this.props.updateTriggers.getTextPosition },
         })
       );
+      if (selectedNodes.length) {
+        layers.push(
+          new LineLayer({
+            id: "leaf-labels-selected-lines",
+            data: selectedNodes,
+            getSourcePosition: this.props.getTextPosition,
+            getTargetPosition: getNodePosition,
+            getColor: this.props.lineColour,
+            getWidth: this.props.lineWidth,
+            opacity: 0.54,
+            updateTriggers: { getSourcePosition: this.props.updateTriggers.getTextPosition },
+          })
+        );
+      }
+      if (this.props.highlightedNode) {
+        layers.push(
+          new LineLayer({
+            id: "leaf-labels-highlight-lines",
+            data: [ this.props.highlightedNode ],
+            getSourcePosition: this.props.getTextPosition,
+            getTargetPosition: getNodePosition,
+            getColor: this.props.highlightColour,
+            getWidth: this.props.lineWidth,
+            opacity: 0.54,
+          })
+        );
+      }
     }
 
     return layers;

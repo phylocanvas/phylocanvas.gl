@@ -26,13 +26,9 @@ import { TreeTypes } from "../../constants";
 export default memoise(
   (tree) => tree.getTreeType(),
   (tree) => tree.getBranchScale(),
-  (tree) => tree.getFontSize(),
-  (tree) => tree.getScale(),
   (
     treeType,
     branchScale,
-    fontSize,
-    scale,
   ) => {
     return (node) => {
       if (treeType === TreeTypes.Diagonal) {

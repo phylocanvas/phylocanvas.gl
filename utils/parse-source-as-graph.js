@@ -20,15 +20,19 @@
 // THE SOFTWARE.
 
 import treeTraversal from "./tree-traversal";
+import jewickParser from "./jewick.mjs";
 
 const newickParser = require("./newick");
 
 export default function (source) {
   performance.mark("parse");
-
   let sourceDef = source;
   if (typeof source === "string") {
     sourceDef = { type: "newick", data: source };
+  }
+
+  if (Array.isArray(source)) {
+    sourceDef = { type: "jewick", data: source };
   }
 
   const { type, data, ...options } = sourceDef;
@@ -37,15 +41,25 @@ export default function (source) {
     performance.mark("parse newick");
     rootNode = newickParser.parse_newick(data);
     performance.measure("  parse newick", "parse newick");
-  } else if (type === "biojs") {
+  }
+  else if (type === "jewick" || type === undefined) {
+    performance.mark("parse jewick");
+    rootNode = jewickParser(data);
+    performance.measure("  parse jewick", "parse jewick");
+  }
+  else if (type === "biojs") {
     rootNode = data;
-  } else {
+  }
+  else {
     throw new Error(`Source type is not supported: ${type}`);
   }
+
+  // console.log(JSON.stringify(rootNode, null, 2))
 
   performance.mark("treeTraversal");
   const nodes = treeTraversal(rootNode, options);
   performance.measure("  treeTraversal", "treeTraversal");
   performance.measure("parse", "parse");
+
   return nodes;
 }

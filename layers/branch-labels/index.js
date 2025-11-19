@@ -60,7 +60,7 @@ export default () => memoise(
       id: "branch-labels",
       updateTriggers: {
         getPixelOffset: pixelOffsetAccessor,
-        getText: textAccessor,
+        all: textAccessor,
       },
     });
     return layer;

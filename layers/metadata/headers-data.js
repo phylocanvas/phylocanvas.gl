@@ -31,6 +31,8 @@ export default memoise(
   (tree) => tree.getMetadataColumnWidth(),
   (tree) => tree.getBranchScale(),
   (tree) => tree.getBlockSize(),
+  (tree) => tree.getBlockPadding(),
+  (tree) => tree.getStepScale() * tree.getScale(),
   (
     graph,
     shouldAlignLabels,
@@ -39,7 +41,10 @@ export default memoise(
     columnWidth,
     branchScale,
     blockSize,
+    blockPadding,
+    stepSize,
   ) => {
+
     const data = [];
 
     const firstLeaf = graph.postorderTraversal[graph.root.postIndex - graph.root.totalNodes + 1];
@@ -65,7 +70,7 @@ export default memoise(
     }
 
     let xOffset = 0;
-    const offsetY = (angle === 0 ? 1 : -1) * blockSize;
+    const offsetY = (angle === 0 ? 0.5 : -0.5) * stepSize;
     for (let index = 0; index < metadataColumns.length; index++) {
       const columnName = metadataColumns[index];
 
@@ -73,10 +78,10 @@ export default memoise(
         node: firstLeaf,
         inverted,
         position: nodePosition,
-        offsetX: xOffset + (columnWidth / 2),
+        offsetX: xOffset + blockPadding + (columnWidth / 2),
         offsetY,
         text: columnName,
-        angle: 360 - (angle / Angles.Degrees360) * 360,
+        angle: 360 - ((angle / Angles.Degrees360) * 360),
       });
 
       xOffset += columnWidth;

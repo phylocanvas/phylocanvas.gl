@@ -33,23 +33,9 @@ import metadataHeaderFontSizeMemo from "../layers/metadata/font-size";
 import lineColourMemo from "../layers/edges/line-colour";
 
 import drawVectorShape from "../utils/draw-vector-shape";
+import colourArrayToCssRGBA from "../utils/colour-array-to-css";
 
 import { Angles, TreeTypes } from "../constants";
-
-function colourArrayToCssRGBA(colourArray, ignoreAlpha = true) {
-  const [ r, g, b, a = 255 ] = colourArray;
-
-  if (a === 0) {
-    return "none";
-  }
-
-  if (ignoreAlpha || a === 255) {
-    return `rgb(${r}, ${g}, ${b})`;
-  }
-  else {
-    return `rgba(${r}, ${g}, ${b}, ${a / 255})`;
-  }
-}
 
 function polarToCartesian(centerX, centerY, radius, angleInRadians) {
   return {
@@ -72,7 +58,7 @@ function describeArc(x, y, radius, startAngle, endAngle) {
   return `<path fill="none" d="${d.join(" ")}" />`;
 }
 
-export default function exportSVG() {
+export default function exportSVG(returnBlob = true) {
   const nodes = this.getGraphAfterLayout();
   const size = this.getCanvasSize();
   const type = this.getTreeType();
@@ -140,40 +126,44 @@ export default function exportSVG() {
     //#endregion
 
     //#region Draw node shapes
-    const showShapeBorders = this.props.showShapeBorders;
 
-    let shapeBorderWidth = "";
-    let shapeBorderColour = "";
-    if (showShapeBorders) {
-      shapeBorderWidth = shapeBorderWidthMemo(this);
-      shapeBorderColour = colourArrayToCssRGBA(shapeBorderColourMemo(this));
-    }
+    if (this.props.showShapes) {
+      const showShapeBorders = this.props.showShapeBorders;
 
-    svg.push("<g>\n");
-
-    for (let i = nodes.firstIndex; i < nodes.lastIndex; i++) {
-      const node = nodes.preorderTraversal[i];
-      if (node.isLeaf && node.shape && !node.isHidden) {
-        svg.push(
-          drawVectorShape(
-            node.shape,
-            node.x,
-            node.y,
-            nodeRadius,
-            colourArrayToCssRGBA(node.fillColour),
-            shapeBorderColour,
-            shapeBorderWidth,
-          )
-        );
-        svg.push("\n");
+      let shapeBorderWidth = "";
+      let shapeBorderColour = "";
+      if (showShapeBorders) {
+        shapeBorderWidth = shapeBorderWidthMemo(this);
+        shapeBorderColour = colourArrayToCssRGBA(shapeBorderColourMemo(this));
       }
-      // skip collapsed subtrees
-      if (node.isCollapsed) {
-        i += node.totalNodes - 1;
-      }
-    }
 
-    svg.push("</g>\n");
+      svg.push("<g>\n");
+
+      for (let i = nodes.firstIndex; i < nodes.lastIndex; i++) {
+        const node = nodes.preorderTraversal[i];
+        if (node.isLeaf && node.shape && !node.isHidden) {
+          svg.push(
+            drawVectorShape(
+              node.shape,
+              node.x,
+              node.y,
+              nodeRadius,
+              colourArrayToCssRGBA(node.fillColour),
+              shapeBorderColour,
+              shapeBorderWidth,
+            )
+          );
+          svg.push("\n");
+        }
+        // skip collapsed subtrees
+        if (node.isCollapsed) {
+          i += node.totalNodes - 1;
+        }
+      }
+
+      svg.push("</g>\n");
+    }
+  
     //#endregion
 
     //#region Draw labels
@@ -185,10 +175,12 @@ export default function exportSVG() {
       const fontSize = this.getFontSize();
       svg.push(`<g font-family="${fontFamily.replace(/"/g, "'")}" font-size="${fontSize}">\n`);
 
-      for (const node of labelledLeafNodes) {
-        const [ x, y ] = textPositionAccessor(node);
-        const degrees = ((node.angle / Angles.Degrees360) * 360) + (node.inverted ? 180 : 0);
-        svg.push(`<text x="${x}" y="${y}" text-anchor="${node.inverted ? "end" : "start"}" dominant-baseline="middle" transform="rotate(${degrees},${x},${y})">${node.label}</text>\n`);
+      for (const nodes of labelledLeafNodes) {
+        for (const node of nodes) {
+          const [ x, y ] = textPositionAccessor(node);
+          const degrees = ((node.angle / Angles.Degrees360) * 360) + (node.inverted ? 180 : 0);
+          svg.push(`<text x="${x}" y="${y}" text-anchor="${node.inverted ? "end" : "start"}" dominant-baseline="middle" transform="rotate(${degrees},${x},${y})">${node.label}</text>\n`);
+        }
       }
 
       svg.push("</g>\n");
@@ -228,7 +220,7 @@ export default function exportSVG() {
         const [ positionX, positionY ] = datum.position;
         const x = positionX + offsetX;
         const y = positionY + offsetY;
-        const degrees = (datum.angle) + 180;
+        const degrees = (datum.angle) - ((datum.angle % 360 === 0) ? 0 : 180);
         svg.push(`<text x="${x}" y="${y}" text-anchor="${datum.inverted ? "end" : "start"}" dominant-baseline="middle" transform="rotate(${degrees},${x},${y})">${datum.text}</text>\n`);
       }
 
@@ -241,8 +233,14 @@ export default function exportSVG() {
 
   svg.push("</svg>\n");
 
-  return new Blob(
-    svg,
-    { type: "image/svg+xml" },
-  );
+  if (returnBlob) {
+    return new Blob(
+      svg,
+      { type: "image/svg+xml" },
+    );
+  }
+  else {
+    svg.centre = centre;
+    return svg;
+  }
 }

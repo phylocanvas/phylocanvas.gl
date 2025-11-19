@@ -21,6 +21,7 @@
 
 import { TreeTypes, Angles } from "../../constants";
 import memoise from "../../utils/memoise";
+import defaults from "../../defaults";
 
 const leavesPerLabelMemo = memoise(
   (tree) => tree.getTreeType(),
@@ -77,19 +78,24 @@ const labelledLeafNodesMemo = memoise(
   (tree) => tree.getGraphWithStyles(),
   (tree) => tree.getTreeType(),
   leavesPerLabelMemo,
+  (tree) => tree.props.selectedIds ?? defaults.selectedIds,
+  (tree) => tree.props.pinnedIds ?? defaults.pinnedIds,
   (
     graph,
     type,
     leavesPerLabel,
+    selectedIds,
+    pinnedIds,
   ) => {
     if (leavesPerLabel <= 1) {
       const nodesWithLabels = [];
+      const selectedNodes = [];
       for (const node of graph.leaves) {
         if (node.label) {
           nodesWithLabels.push(node);
         }
       }
-      return nodesWithLabels;
+      return [nodesWithLabels, selectedNodes];
     }
 
     const lastIndex = (
@@ -104,16 +110,24 @@ const labelledLeafNodesMemo = memoise(
       )
     );
     const nodesWithLabels = [];
+    const selectedNodes = [];
     for (let index = 0; index < graph.leaves.length; index++) {
-      if (index < lastIndex && index % leavesPerLabel === 0) {
-        const node = graph.leaves[index];
+      const node = graph.leaves[index];
+      if (selectedIds.includes(node.id) || pinnedIds.includes(node.id)) {
+        selectedNodes.push(node);
+        continue;
+      }
+      if (
+        (index < lastIndex)
+        &&
+        (index % leavesPerLabel === 0)
+      ) {
         if (node.label) {
           nodesWithLabels.push(node);
         }
       }
     }
-
-    return nodesWithLabels;
+    return [nodesWithLabels, selectedNodes];
   }
 );
 labelledLeafNodesMemo.displayName = "labelled-leaf-nodes";

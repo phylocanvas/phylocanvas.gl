@@ -19,7 +19,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-export default function addLayer(layerId, visiblePredicate, renderer) {
+export default function addLayer(
+  layerId,
+  visiblePredicate,
+  renderer,
+) {
   const layer = {
     id: layerId,
     isVisible: visiblePredicate,
