@@ -116,7 +116,7 @@ export default function treeTraversal(rootNode, { trimQuotes = true } = {}) {
     const node = preorderTraversal[nodeIndex];
     node.preIndex = nodeIndex;
     if (!node.id) {
-      node.id = nodeIndex.toString();
+      node.id = `__${nodeIndex.toString()}`;
     }
     nodeById[node.id] = node;
     node.visibleLeaves = node.totalLeaves;

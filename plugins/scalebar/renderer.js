@@ -18,6 +18,16 @@ const canvasCentreMemo = memoise(
   }
 );
 
+function getPathToRoot(node) {
+  const path = [];
+  let currentNode = node.parent;
+  while (currentNode) {
+    path.unshift(currentNode.id);
+    currentNode = currentNode.parent;
+  }
+  return path;
+}
+
 export default () => memoise(
   scalebarOptionsMemo,
   (tree) => tree.getBranchScale(),
@@ -26,6 +36,8 @@ export default () => memoise(
   (tree) => tree.getFontFamily(),
   canvasCentreMemo,
   (tree) => tree.getView().target,
+  (tree) => tree.getGraphAfterLayout(),
+  (tree) => tree.props.selectedIds,
   (
     options,
     branchScale,
@@ -34,6 +46,8 @@ export default () => memoise(
     fontFamily,
     canvasCentre,
     viewportCentre,
+    graph,
+    selectedIds,
   ) => {
     const width = options.width;
     const padding = options.padding;
@@ -87,18 +101,63 @@ export default () => memoise(
     const right = (width - padding - options.lineWidth) / scale;
     const bottom = (options.height - padding) / scale;
 
+    const labels = [
+      {
+        position: [
+          x + (options.width / scale) / 2,
+          y + bottom,
+        ],
+        text: scaleValue.toFixed(minDigitis + options.digits),
+      },
+    ];
+
+    if (selectedIds?.length === 2) {
+      const firstNode = graph.ids[selectedIds[0]];
+      const secondNode = graph.ids[selectedIds[1]];
+      if (firstNode && secondNode) {
+        const firstNodePath = getPathToRoot(firstNode);
+        const secondNodePath = getPathToRoot(secondNode);
+        let index = 0;
+        for (let i = 0; i < firstNodePath.length; i++) {
+          if (firstNodePath[i] !== secondNodePath[i]) {
+            break;
+          }
+          index = i;
+        }
+        const commonParentNode = graph.ids[firstNodePath?.[index]];
+
+        if (commonParentNode) {
+          const distance = (
+            (firstNode.distanceFromRoot || 0) 
+            +
+            (secondNode.distanceFromRoot || 0)
+            -
+            (commonParentNode.distanceFromRoot || 0) * 2
+          );
+
+          const roundedDistance = (
+            distance.toFixed(
+              parseInt(Math.abs(Math.log(distance) / LOG10))
+              +
+              options.digits
+            )
+          );
+
+          labels.push({
+            position: [
+              x + (options.width / scale) / 2,
+              y,
+            ],
+            text: `d\u2009=\u2009${roundedDistance}`,
+          });
+        }
+      }
+    }
+ 
     const layer = new ScalebarLayer({
       id: "scalebar-plugin",
       data: {
-        labels: [
-          {
-            position: [
-              x + (options.width / scale) / 2,
-              y + bottom,
-            ],
-            text: scaleValue.toFixed(minDigitis + options.digits),
-          },
-        ],
+        labels,
         lines: [
           {
             sourcePosition: [ x + left, y + bottom],
