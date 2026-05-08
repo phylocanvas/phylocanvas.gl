@@ -61,4 +61,3 @@ If you fork the project and publish it, please choose another name.
 ## Q8: How can I cite Phylocanvas.gl?
 
 If you use Phylocanvas.gl within a publication please cite: [Phylocanvas.gl: A WebGL-powered JavaScript library for large tree visualisation](https://osf.io/nfv6m).
-
