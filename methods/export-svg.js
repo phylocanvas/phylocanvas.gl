@@ -173,6 +173,23 @@ export default function exportSVG(returnBlob = true) {
       const textPositionAccessor = textPositionAccessorMemo(this);
       const fontFamily = this.getFontFamily();
       const fontSize = this.getFontSize();
+
+      if (this.getAlignLeafLabels()) {
+        const labelLineWidth = this.getStrokeWidth() * 0.5;
+        const labelLineColour = colourArrayToCssRGBA(this.getStrokeColour());
+
+        svg.push(`<g stroke="${labelLineColour}" stroke-width="${labelLineWidth}" opacity="0.54">\n`);
+
+        for (const nodes of labelledLeafNodes) {
+          for (const node of nodes) {
+            const [ x, y ] = textPositionAccessor(node);
+            svg.push(`<line x1="${x}" y1="${y}" x2="${node.x}" y2="${node.y}"  />\n`);
+          }
+        }
+
+        svg.push("</g>\n");
+      }
+
       svg.push(`<g font-family="${fontFamily.replace(/"/g, "'")}" font-size="${fontSize}">\n`);
 
       for (const nodes of labelledLeafNodes) {
