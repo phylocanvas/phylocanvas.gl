@@ -20,7 +20,7 @@ export default function (tree, decorate) {
     if (layer) {
       const svg = delegate(false);
 
-      svg.pop();
+      const svgElementEnding = svg.pop();
 
       {
         svg.push(`<g transform="translate(${svg.centre.join(" ")})" >\n`);
@@ -54,7 +54,7 @@ export default function (tree, decorate) {
         svg.push("</g>\n");
       }
 
-      svg.push("</svg>\n");
+      svg.push(svgElementEnding);
 
       const [ returnBlob = true ] = args;
       if (returnBlob) {
