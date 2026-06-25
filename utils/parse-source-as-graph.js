@@ -54,8 +54,6 @@ export default function (source) {
     throw new Error(`Source type is not supported: ${type}`);
   }
 
-  // console.log(JSON.stringify(rootNode, null, 2))
-
   performance.mark("treeTraversal");
   const nodes = treeTraversal(rootNode, options);
   performance.measure("  treeTraversal", "treeTraversal");
