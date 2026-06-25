@@ -23,15 +23,17 @@ export default function (tree, decorate) {
       const svgElementEnding = svg.pop();
 
       {
-        svg.push(`<g transform="translate(${svg.centre.join(" ")})" >\n`);
+        svg.push(`<g id="scalebar-plugin">\n`);
 
         //#region Draw line
         const { lineWidth, lineColour } = layer.props;
         const [ line ] = layer.props.data.lines;
+        const source = svg.projectPoint(line.sourcePosition);
+        const target = svg.projectPoint(line.targetPosition);
 
         svg.push(`<g stroke="${colourArrayToCssRGBA(lineColour)}" stroke-width="${lineWidth}" >\n`);
 
-        svg.push(`<line x1="${line.sourcePosition[0]}" y1="${line.sourcePosition[1]}" x2="${line.targetPosition[0]}" y2="${line.targetPosition[1]}"  />\n`);
+        svg.push(`<line x1="${source[0]}" y1="${source[1]}" x2="${target[0]}" y2="${target[1]}"  />\n`);
 
         svg.push("</g>\n");
 
@@ -44,7 +46,7 @@ export default function (tree, decorate) {
 
         svg.push(`<g font-family="${fontFamily.replace(/"/g, "'")}" font-size="${fontSize}">\n`);
 
-        const [ x, y ] = label.position;
+        const [ x, y ] = svg.projectPoint(label.position);
         svg.push(`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="auto" style="padding-bottom:2px">${label.text}</text>\n`);
 
         svg.push("</g>\n");

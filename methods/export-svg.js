@@ -64,20 +64,24 @@ export default function exportSVG(returnBlob = true) {
   const type = this.getTreeType();
   const nodeSize = this.getNodeSize();
   const nodeRadius = nodeSize * 0.5;
+  const scale = this.getScale(true);
+  const projectPoint = (point) => this.projectPoint(point, scale);
+  const clipPathId = `phylocanvas-clip-path`;
 
   const svg = [];
-
-  const area = this.getDrawingArea();
-  const centre = [
-    (area.width / 2) + area.left,
-    (area.height / 2) + area.top,
-  ];
+  const pushLine = (sourcePoint, targetPoint) => {
+    const source = projectPoint(sourcePoint);
+    const target = projectPoint(targetPoint);
+    svg.push(`<line x1="${source[0]}" y1="${source[1]}" x2="${target[0]}" y2="${target[1]}"  />\n`);
+  };
 
   svg.push(`<svg viewBox="0 0 ${size.width} ${size.height}" xmlns="http://www.w3.org/2000/svg">\n`);
 
-  {
-    svg.push(`<g transform="translate(${centre.join(" ")})" >\n`);
+  svg.push(`<defs><clipPath id="${clipPathId}"><rect x="0" y="0" width="${size.width}" height="${size.height}" /></clipPath></defs>\n`);
 
+  svg.push(`<g clip-path="url(#${clipPathId})">\n`);
+
+  {
     //#region Draw lines
     const lineWidth = this.getStrokeWidth();
     const lineColour = colourArrayToCssRGBA(lineColourMemo(this));
@@ -88,16 +92,17 @@ export default function exportSVG(returnBlob = true) {
       const node = nodes.preorderTraversal[i];
 
       if (type === TreeTypes.Circular) {
-        svg.push(`<line x1="${node.x}" y1="${node.y}" x2="${node.cx}" y2="${node.cy}"  />\n`);
+        pushLine([ node.x, node.y ], [ node.cx, node.cy ]);
 
         if (node.children && node.children.length && !node.isCollapsed) {
           const firstChild = node.children[0];
           const lastChild = node.children[node.children.length - 1];
+          const root = projectPoint([ nodes.root.x, nodes.root.y ]);
           svg.push(
             describeArc(
-              nodes.root.x,
-              nodes.root.y,
-              node.dist,
+              root[0],
+              root[1],
+              node.dist * scale,
               firstChild.angle,
               lastChild.angle,
             )
@@ -105,15 +110,15 @@ export default function exportSVG(returnBlob = true) {
         }
       }
       else if (type === TreeTypes.Diagonal || type === TreeTypes.Radial) {
-        svg.push(`<line x1="${node.x}" y1="${node.y}" x2="${node.parent.x}" y2="${node.parent.y}"  />\n`);
+        pushLine([ node.x, node.y ], [ node.parent.x, node.parent.y ]);
       }
       else if (type === TreeTypes.Hierarchical) {
-        svg.push(`<line x1="${node.x}" y1="${node.y}" x2="${node.x}" y2="${node.parent.y}"  />\n`);
-        svg.push(`<line x1="${node.x}" y1="${node.parent.y}" x2="${node.parent.x}" y2="${node.parent.y}"  />\n`);
+        pushLine([ node.x, node.y ], [ node.x, node.parent.y ]);
+        pushLine([ node.x, node.parent.y ], [ node.parent.x, node.parent.y ]);
       }
       else if (type === TreeTypes.Rectangular) {
-        svg.push(`<line x1="${node.x}" y1="${node.y}" x2="${node.parent.x}" y2="${node.y}"  />\n`);
-        svg.push(`<line x1="${node.parent.x}" y1="${node.y}" x2="${node.parent.x}" y2="${node.parent.y}"  />\n`);
+        pushLine([ node.x, node.y ], [ node.parent.x, node.y ]);
+        pushLine([ node.parent.x, node.y ], [ node.parent.x, node.parent.y ]);
       }
 
       // skip collapsed sub-trees
@@ -142,11 +147,12 @@ export default function exportSVG(returnBlob = true) {
       for (let i = nodes.firstIndex; i < nodes.lastIndex; i++) {
         const node = nodes.preorderTraversal[i];
         if (node.isLeaf && node.shape && !node.isHidden) {
+          const position = projectPoint([ node.x, node.y ]);
           svg.push(
             drawVectorShape(
               node.shape,
-              node.x,
-              node.y,
+              position[0],
+              position[1],
               nodeRadius,
               colourArrayToCssRGBA(node.fillColour),
               shapeBorderColour,
@@ -183,7 +189,7 @@ export default function exportSVG(returnBlob = true) {
         for (const nodes of labelledLeafNodes) {
           for (const node of nodes) {
             const [ x, y ] = textPositionAccessor(node);
-            svg.push(`<line x1="${x}" y1="${y}" x2="${node.x}" y2="${node.y}"  />\n`);
+            pushLine([ x, y ], [ node.x, node.y ]);
           }
         }
 
@@ -195,8 +201,9 @@ export default function exportSVG(returnBlob = true) {
       for (const nodes of labelledLeafNodes) {
         for (const node of nodes) {
           const [ x, y ] = textPositionAccessor(node);
+          const position = projectPoint([ x, y ]);
           const degrees = ((node.angle / Angles.Degrees360) * 360) + (node.inverted ? 180 : 0);
-          svg.push(`<text x="${x}" y="${y}" text-anchor="${node.inverted ? "end" : "start"}" dominant-baseline="middle" transform="rotate(${degrees},${x},${y})">${node.label}</text>\n`);
+          svg.push(`<text x="${position[0]}" y="${position[1]}" text-anchor="${node.inverted ? "end" : "start"}" dominant-baseline="middle" transform="rotate(${degrees},${position[0]},${position[1]})">${node.label}</text>\n`);
         }
       }
 
@@ -210,14 +217,17 @@ export default function exportSVG(returnBlob = true) {
     const pixelOffset = this.getPixelOffsets().length;
     const blockWidth = this.getBlockSize();
     const blockHalfWidth = blockWidth / 2;
-    const stepSize = this.getStepScale();
+    const stepSize = this.getStepScale() * scale;
     const blockHeight = (!this.isOrthogonal() || (stepSize > blockWidth)) ? blockWidth : stepSize;
     const blockHalfHeight = blockHeight / 2;
     const blocks = blocksDataMemo(this);
     for (const datum of blocks) {
       const degrees = ((datum.node.angle / Angles.Degrees360) * 360) + (datum.node.inverted ? 180 : 0);
-      const x = datum.position[0] + ((datum.offsetX + pixelOffset) * Math.cos(datum.node.angle));
-      const y = datum.position[1] + ((datum.offsetX + pixelOffset) * Math.sin(datum.node.angle));
+      const point = [
+        datum.position[0] + ((datum.offsetX + pixelOffset) * Math.cos(datum.node.angle)) / scale,
+        datum.position[1] + ((datum.offsetX + pixelOffset) * Math.sin(datum.node.angle)) / scale,
+      ];
+      const [ x, y ] = projectPoint(point);
       svg.push(`<rect x="${x - blockHalfWidth}" y="${y - blockHalfHeight}" width="${blockWidth}" height="${blockHeight}" transform="rotate(${degrees},${x},${y})" fill="${colourArrayToCssRGBA(datum.colour)}" />\n`);
     }
 
@@ -235,8 +245,10 @@ export default function exportSVG(returnBlob = true) {
       for (const datum of headersData) {
         const [ offsetX, offsetY ] = pixelOffsetAccessor(datum);
         const [ positionX, positionY ] = datum.position;
-        const x = positionX + offsetX;
-        const y = positionY + offsetY;
+        const [ x, y ] = projectPoint([
+          positionX + (offsetX / scale),
+          positionY + (offsetY / scale),
+        ]);
         const degrees = (datum.angle) - ((datum.angle % 360 === 0) ? 0 : 180);
         svg.push(`<text x="${x}" y="${y}" text-anchor="${datum.inverted ? "end" : "start"}" dominant-baseline="middle" transform="rotate(${degrees},${x},${y})">${datum.text}</text>\n`);
       }
@@ -244,9 +256,9 @@ export default function exportSVG(returnBlob = true) {
       svg.push("</g>\n");
     }
     //#endregion
-
-    svg.push("</g>\n");
   }
+    
+  svg.push("</g>\n");
 
   svg.push("</svg>\n");
 
@@ -257,7 +269,7 @@ export default function exportSVG(returnBlob = true) {
     );
   }
   else {
-    svg.centre = centre;
+    svg.projectPoint = projectPoint;
     return svg;
   }
 }
